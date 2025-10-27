@@ -1,76 +1,145 @@
-## DirectionNet
+# 1)DirectionNet Installation Guide (For MacOS)
 
-This repository will contain the TensorFlow code for the model introduced in the CVPR 2020 paper:
+First, clone the repository to your local computer:
 
-**Wide-Baseline Relative Camera Pose Estimation with Directional Learning** \
-Kefan Chen, Noah Snavely, Ameesh Makadia \
-*IEEE Conference on Computer Vision and Pattern Recognition (CVPR 2020)*. \
-[arXiv](https://arxiv.org/abs/2106.03336)
-
-## Requirements
-
-Required packages: tensorflow 1.15, tensorflow_graphics, tensorflow_addons, tensorflow_probability, tf_slim, pickle
-
-## Dataset and Pre-trained Models
-
-[MatterportA test data](https://drive.google.com/file/d/1be75Ys8vi1o7eeS_Rf0SuJxlTkDJNisZ/view?usp=sharing)\
-[MatterportB test data](https://drive.google.com/file/d/1PcyD_8TZOOKh6G8B8eUHQrOUEOMrMx_F/view?usp=sharing)
-<!-- [MatterportA Checkpoints](https://drive.google.com/file/d/1ATA1-FwWb_sKAV4uWcpj7ZrMu59ZhG3_/view?usp=sharing)\
-[MatterportB Checkpoints](https://drive.google.com/file/d/14OUSXnay8VD5rARxXwwLX11z-ScibXN8/view?usp=sharing) -->
-
-1. dataset.generate_from_meta can create the datasets of images and ground truth from the Matterport3D dataset given the meta data files.
-
-2. dataset.generate_random_views can be used to generate a large-scale wide stereo dataset with camera pose labels from a panoramic image dataset.
-
-## Train DirectionNet-R and DirectionNet-T
-
-1. train DirectionNet-R.
+```bash
+git clone git@github.com:cahitbarankilinc/DirectionNet_Setup_For_MacOS.git
 ```
+The Python files in this repository are set up to work on MacOS operating systems.
+
+<br><br>
+
+# 2)Downloading the Datasets
+
+After setting up the repository locally, download the following two datasets:
+
+- [**MatterportA test data**](https://drive.google.com/file/d/1be75Ys8vi1o7eeS_Rf0SuJxlTkDJNisZ/view?usp=sharing)
+- [**MatterportB test data**](https://drive.google.com/file/d/1PcyD_8TZOOKh6G8B8eUHQrOUEOMrMx_F/view?usp=sharing)
+
+These datasets will be downloaded as `.zip` files. Extract the zip files and place them in the `/data` folder of the repository as shown below:
+
+```bash
+├ train.py
+├ eval.py
+├ dataset/
+├ data/
+│
+├── MatterportA/
+│   ├ README
+│   ├ test/
+│   ├ test_meta/
+│
+├── MatterportB/
+│   ├ README
+│   ├ test/
+│   ├ test_meta/
+```
+
+<br><br>
+
+# 3Installation Steps
+
+## 1️⃣ Arm64 Miniforge Installation
+
+Before setting up the repository, create a new folder (do **not** clone the repo yet). Then follow these steps in order:
+
+### Download & Install Miniforge:
+```bash
+curl -L -o Miniforge3-MacOSX-arm64.sh \
+https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
+bash Miniforge3-MacOSX-arm64.sh -b -p "$HOME/miniforge_arm"
+```
+### For Conda init (arm):
+```bash
+"$HOME/miniforge_arm/bin/conda" init zsh
+exec zsh
+```
+
+
+## 2️⃣ Verification
+
+After completing the installation, close and reopen the terminal. Navigate to the directory you created for the repository and verify with the following commands:
+```bash
+which conda
+conda info | egrep "platform|arch|base environment"
+```
+### Expected results:
+```bash
+platform: osx-arm64
+arch: arm64
+base environment: .../miniforge_arm
+```
+
+
+## 3️⃣ Creating Environment
+```bash
+conda create -n directionnet_baran python=3.11 -y
+conda activate directionnet_baran
+```
+
+
+
+## 4️⃣ Installing TensorFlow and Libraries
+First, remove any old TensorFlow versions:
+```bash
+python -m pip uninstall -y tensorflow tensorflow-macos tensorflow-intel || true
+python -m pip cache purge
+python -m pip install -U pip
+```
+
+### Install the correct packages for Apple Silicon:
+```bash
+python -m pip install "tensorflow==2.15.0"
+python -m pip install tensorflow-metal
+python -m pip install "keras==2.15.0"
+python -m pip install "tensorflow-probability==0.23.0"
+python -m pip install "tf-slim==1.1.0" "tensorflow-graphics"
+```
+
+### Test it:
+```bash
+python -c "import tensorflow as tf, platform, sys; print('Arch:', platform.machine()); print('TF:', tf.__version__); print('GPU:', tf.config.list_physical_devices('GPU')); print('PY:', sys.executable)"
+
+```
+### Expected results:
+```bash
+Arch: arm64
+TF: 2.15.0 (or 2.1x)
+GPU:  <Apple Metal in list>
+PY:  /Users/<username>/miniforge_arm/
+```
+
+
+
+<br><br>
+
+
+
+# 🚀 Model Training
+
+You can now start training the model. Below are example commands to run the training:
+### Train DirectionNet-R
+```bash
 python train.py \
---checkpoint_dir <path_to_checkpoints_and_logs> \
---data_dir <path_to_training_set> \
---model 9D
-```
-2. Run DirectionNet-R on the training and test sets, then save the estimated rotations as Python pickle dictionary in the data directories respectively.
-3. train DirectionNet-T.
-```
-python train.py \
---checkpoint_dir <path_to_checkpoints_and_logs> \
---data_dir <path_to_training_set> \
---model T
+  --checkpoint_dir checkpoints/R \
+  --data_dir data/MatterportA \
+  --model 9D
 ```
 
-## Evaluation
-DirectionNet-R
-```
+### Evaluation DirectionNet-R
+```bash
 python eval.py \
---checkpoint_dir <path_to_load_checkpoints> \
---eval_data_dir <path_to_test_set> \
---save_summary_dir <path_to_save_logs> \
---testset_size <testset_size> \
---batch <test_batch> \
---model 9D
+  --checkpoint_dir checkpoints/R \
+  --eval_data_dir data/MatterportA \
+  --save_summary_dir logs/eval_R \
+  --testset_size 1000 \
+  --batch 8 \
+  --model 9D
 ```
 
-DirectionNet-T
-```
-python eval.py \
---checkpoint_dir <path_to_load_checkpoints> \
---eval_data_dir <path_to_test_set> \
---save_summary_dir <path_to_save_logs> \
---testset_size <testset_size> \
---batch <test_batch> \
---model T
-```
 
-## Citation
-```
-@InProceedings{Chen_2021_CVPR,
-author    = {Chen, Kefan and Snavely, Noah and Makadia, Ameesh},
-title     = {Wide-Baseline Relative Camera Pose Estimation With Directional Learning},
-booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-month     = {June},
-year      = {2021},
-pages     = {3258-3268}
-}
-```
+
+<br><br>
+
+# For More: 
+- [**Original Source**](https://github.com/arthurchen0518/DirectionNet?tab=readme-ov-file)
